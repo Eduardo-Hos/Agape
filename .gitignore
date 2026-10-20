@@ -1,0 +1,50 @@
+# --- Node / Frontend ---
+node_modules/
+dist/
+build/
+.vite/
+.react-router/
+
+# --- Java / Maven / Backend ---
+target/
+*.class
+*.jar
+*.war
+*.log
+hs_err_pid*
+replay_pid*
+
+# --- Environment ---
+.env
+.env.local
+.env.*.local
+
+# --- IDE ---
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+*.swp
+*.swo
+*~
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+Desktop.ini
+ehthumbs.db
+
+# --- Misc ---
+*.tmp
+*.bak
+*.orig
+*.pid
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# --- Arquivos locais (nao subir) ---
+git up.txt
+git-up.txt

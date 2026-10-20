@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Espiao BLE - Agape</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; padding: 16px; background: #111; color: #eee; }
+    h1 { font-size: 20px; }
+    button { font-size: 16px; padding: 14px 18px; width: 100%; margin-bottom: 10px; border: 0; border-radius: 8px; background: #1e50ff; color: #fff; }
+    button:active { opacity: .8; }
+    pre { background: #000; color: #0f0; padding: 12px; border-radius: 8px; font-size: 12px; white-space: pre-wrap; word-break: break-all; min-height: 200px; }
+    .linha { padding: 6px 0; border-bottom: 1px solid #333; font-size: 13px; }
+    .uuid { color: #ffd54f; }
+    .valor { color: #4fc3f7; }
+  </style>
+</head>
+<body>
+  <h1>🔍 Espião Bluetooth (lista os UUIDs do ESP)</h1>
+  <button id="btn">Escanear dispositivo</button>
+  <button id="btnHub" style="background:#555">Escanear ESP32_Hub</button>
+  <button id="btnPul" style="background:#555">Escanear ESP32_Pulseira</button>
+  <pre id="out">Toque num botao acima. Selecione o dispositivo na lista. Os UUIDs aparecerao aqui.</pre>
+
+  <script>
+    const out = document.getElementById('out');
+    function log(t) { out.textContent += t + '\n'; }
+    function clear() { out.textContent = ''; }
+
+    async function escanear(filtroNome) {
+      clear();
+      try {
+        log('Abrindo lista de dispositivos...');
+        const filtros = filtroNome ? [{ name: filtroNome }] : [{ acceptAllDevices: true }];
+        const device = await navigator.bluetooth.requestDevice({
+          filters: filtros,
+          optionalServices: [
+            '4fafc201-1fb5-459e-8fcc-c5c9c331914b',
+            '5bc28d32-1fb5-459e-8fcc-c5c9c331914b',
+            'beb5483e-36e1-4688-b7f5-ea07361b26a8',
+            'abc5483e-36e1-4688-b7f5-ea07361b26a8',
+            '00001800-0000-1000-8000-00805f9b34fb',
+            '00001801-0000-1000-8000-00805f9b34fb',
+          ],
+        });
+        log('Dispositivo escolhido: ' + device.name);
+        log('Conectando...');
+        const server = await device.gatt.connect();
+        log('Conectado! Listando servicos...\n');
+
+        const services = await server.getPrimaryServices();
+        for (const svc of services) {
+          log('SERVICO (service): ' + svc.uuid);
+          try {
+            const chars = await svc.getCharacteristics();
+            for (const c of chars) {
+              const props = [];
+              if (c.properties.read) props.push('read');
+              if (c.properties.write) props.push('write');
+              if (c.properties.notify) props.push('notify');
+              if (c.properties.indicate) props.push('indicate');
+              log('   -> CHARACTERISTIC: ' + c.uuid + '  [' + props.join(',') + ']');
+              if (c.properties.read) {
+                try {
+                  const v = await c.readValue();
+                  let hex = [];
+                  for (let i = 0; i < v.byteLength; i++) hex.push(v.getUint8(i));
+                  log('        valor atual: [' + hex.join(', ') + ']  (1o byte = ' + (v.byteLength ? v.getUint8(0) : '-') + ')');
+                } catch (e) { log('        (nao foi possivel ler: ' + e.message + ')'); }
+              }
+            }
+          } catch (e) { log('   erro ao listar characteristics: ' + e.message); }
+        }
+        log('\n=== FIM ===');
+      } catch (e) {
+        log('ERRO: ' + e.message);
+      }
+    }
+
+    document.getElementById('btn').onclick = () => escanear(null);
+    document.getElementById('btnHub').onclick = () => escanear('ESP32_Hub');
+    document.getElementById('btnPul').onclick = () => escanear('ESP32_Pulseira');
+  </script>
+</body>
+</html>
